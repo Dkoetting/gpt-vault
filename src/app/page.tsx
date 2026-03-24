@@ -273,10 +273,11 @@ export default function GptVaultPage() {
   const [inquiryLoading, setInquiryLoading] = useState(false)
 
   // Projects
-  const [projectCount,   setProjectCount]   = useState(1)
-  const [projectEmail,   setProjectEmail]   = useState('')
-  const [projectLoading, setProjectLoading] = useState(false)
-  const [projectError,   setProjectError]   = useState('')
+  const [projectCount,    setProjectCount]    = useState(1)
+  const [projectEmail,    setProjectEmail]    = useState('')
+  const [projectLoading,  setProjectLoading]  = useState(false)
+  const [projectError,    setProjectError]    = useState('')
+  const [projectSelected, setProjectSelected] = useState(false)
 
   const [lang, setLang] = useState<Lang>(() => {
     if (typeof window === 'undefined') return 'de'
@@ -583,55 +584,53 @@ export default function GptVaultPage() {
         <h2 className={styles.sectionTitle}>{t.projTitle}</h2>
         <p className={styles.sectionSub}>{t.projSub}</p>
 
-        <div className={styles.projectBox}>
-          <label className={styles.projectLabel}>
-            {t.projLabel}
-            <span className={styles.projectPer}>{t.projPer}</span>
-          </label>
-          <div className={styles.projectRow}>
-            <button
-              className={styles.projectStep}
-              onClick={() => setProjectCount((n) => Math.max(1, n - 1))}
-              aria-label="Weniger"
-            >−</button>
-            <input
-              type="number"
-              min={1}
-              max={500}
-              value={projectCount}
-              onChange={(e) => setProjectCount(Math.max(1, Math.min(500, parseInt(e.target.value) || 1)))}
-              className={styles.projectInput}
-            />
-            <button
-              className={styles.projectStep}
-              onClick={() => setProjectCount((n) => Math.min(500, n + 1))}
-              aria-label="Mehr"
-            >+</button>
+        <div className={styles.grid}>
+          <div className={[styles.card, styles.projectBox].join(' ')}>
+            <div className={styles.projectLabel}>
+              <span>{t.projLabel}</span>
+              <span className={styles.projectPer}>{t.projPer}</span>
+            </div>
+            <div className={styles.projectRow}>
+              <button className={styles.projectStep} onClick={() => setProjectCount((n) => Math.max(1, n - 1))} aria-label="Weniger">−</button>
+              <input
+                type="number" min={1} max={500} value={projectCount}
+                onChange={(e) => setProjectCount(Math.max(1, Math.min(500, parseInt(e.target.value) || 1)))}
+                className={styles.projectInput}
+              />
+              <button className={styles.projectStep} onClick={() => setProjectCount((n) => Math.min(500, n + 1))} aria-label="Mehr">+</button>
+            </div>
+            <div className={styles.projectTotal}>
+              {t.projTotal}&nbsp;<strong>{((projectCount * 120) / 100).toFixed(2).replace('.', ',')} €</strong>
+            </div>
+            <button className={styles.cardSelect} style={projectSelected ? {background:'#1d4ed8',color:'#fff',borderColor:'#1d4ed8'} : {}}
+              onClick={() => setProjectSelected(true)}>
+              {projectSelected ? t.packagesSelected : t.packagesSelect}
+            </button>
           </div>
-          <div className={styles.projectTotal}>
-            {t.projTotal}&nbsp;
-            <strong>{((projectCount * 120) / 100).toFixed(2).replace('.', ',')} €</strong>
-          </div>
-
-          <input
-            type="email"
-            placeholder={t.projEmail}
-            value={projectEmail}
-            onChange={(e) => setProjectEmail(e.target.value)}
-            className={styles.emailInput}
-            style={{ marginTop: '16px' }}
-            onKeyDown={(e) => e.key === 'Enter' && handleBuyProjects()}
-          />
-          {projectError && <p className={styles.error}>{projectError}</p>}
-          <button
-            className={styles.buyButton}
-            onClick={handleBuyProjects}
-            disabled={projectLoading || !projectEmail.trim() || projectCount < 1}
-          >
-            {projectLoading ? t.projLoading : t.projCta}
-          </button>
-          <p className={styles.checkoutHint}>{t.projHint}</p>
         </div>
+
+        {projectError && <p className={styles.error} style={{textAlign:'center',marginTop:'8px'}}>{projectError}</p>}
+
+        {/* Checkout für Projekte */}
+        {projectSelected && (
+          <div className={styles.checkout} style={{marginTop:'16px'}}>
+            <h2 className={styles.checkoutTitle}>
+              {t.projTitle} ({projectCount}×) – {((projectCount * 120) / 100).toFixed(2).replace('.', ',')} €
+            </h2>
+            <p className={styles.checkoutSub}>{t.checkoutSub}</p>
+            <input
+              type="email" placeholder={t.projEmail} value={projectEmail}
+              onChange={(e) => setProjectEmail(e.target.value)}
+              className={styles.emailInput}
+              onKeyDown={(e) => e.key === 'Enter' && handleBuyProjects()}
+            />
+            <button className={styles.buyButton} onClick={handleBuyProjects}
+              disabled={projectLoading || !projectEmail.trim()}>
+              {projectLoading ? t.projLoading : t.projCta}
+            </button>
+            <p className={styles.checkoutHint}>{t.projHint}</p>
+          </div>
+        )}
       </section>
 
       {/* ── Checkout ────────────────────────────────────────────────── */}
