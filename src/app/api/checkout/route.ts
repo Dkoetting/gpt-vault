@@ -111,7 +111,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ url: session.url })
   } catch (err) {
-    console.error('[gpt-vault/checkout] Stripe error', err)
-    return NextResponse.json({ error: 'stripe_error' }, { status: 500 })
+    const msg = err instanceof Error ? err.message : String(err)
+    console.error('[gpt-vault/checkout] Stripe error', msg)
+    return NextResponse.json({ error: 'stripe_error', detail: msg }, { status: 500 })
   }
 }
