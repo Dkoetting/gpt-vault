@@ -311,7 +311,7 @@ export default function GptVaultPage() {
     setInquiryMessage('')
   }
 
-  const mainPackages      = packages.filter((p) => !p.contactOnly)
+  const mainPackages      = packages.filter((p) => !p.contactOnly && !p.sessionOnly)
   const enterprisePackage = packages.find((p) => p.contactOnly)
 
   return (
