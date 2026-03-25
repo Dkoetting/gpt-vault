@@ -159,7 +159,7 @@ export async function POST(request: Request) {
         invoice_id: invoice.id,
         invoice_nr: invoiceNr,
       },
-      success_url: `${baseUrl}/success?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${baseUrl}/success?session_id={CHECKOUT_SESSION_ID}&package=${metaPackageId}`,
       cancel_url:  `${baseUrl}/`,
     })
 

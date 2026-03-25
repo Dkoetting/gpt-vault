@@ -123,6 +123,19 @@
   color: #6b7280;
 }
 
+.contactLine {
+  margin-top: 8px;
+  font-size: 0.9rem;
+}
+
+.contactLine a {
+  color: #2563eb;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.contactLine a:hover { text-decoration: underline; }
+
 /* ── Back ─────────────────────────────────────────────────────────────────── */
 
 .backLink {
