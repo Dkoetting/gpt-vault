@@ -670,7 +670,13 @@
   font-size: 1.35rem;
   font-weight: 800;
   color: #1d4ed8;
-  margin-bottom: 12px;
+  margin-bottom: 4px;
+}
+
+.cardVat {
+  font-size: 0.72rem;
+  color: #9ca3af;
+  margin-bottom: 10px;
 }
 
 .cardSelect {

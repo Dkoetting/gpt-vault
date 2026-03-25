@@ -494,6 +494,7 @@ export default function GptVaultPage() {
               <div className={styles.cardName}>{pkg.name}</div>
               <div className={styles.cardGpts}>{t.packagesUpTo} {pkg.gpts} {t.packagesGpts}</div>
               <div className={styles.cardPrice}>{formatPrice(pkg.priceCents!)}</div>
+              <div className={styles.cardVat}>zzgl. 19&nbsp;% MwSt.</div>
               <div className={styles.cardSelect}>{t.packagesSelect}</div>
             </div>
           ))}
@@ -536,6 +537,7 @@ export default function GptVaultPage() {
             <div className={styles.projectTotal}>
               <strong>{((projectCount * 120) / 100).toFixed(2).replace('.', ',')} €</strong>
             </div>
+            <div className={styles.cardVat}>zzgl. 19&nbsp;% MwSt.</div>
             <button
               className={styles.projectSelectBtn}
               onClick={() => { window.location.href = `/checkout?package=projects&count=${projectCount}` }}>
