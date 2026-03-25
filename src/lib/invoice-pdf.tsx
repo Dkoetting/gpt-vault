@@ -1,4 +1,6 @@
-import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer'
+import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer'
+
+const BASE_URL = process.env.NEXT_PUBLIC_HUB_BASE_URL ?? 'https://gpt-vault-theta.vercel.app'
 
 // ── Styles ─────────────────────────────────────────────────────────────────────
 
@@ -13,10 +15,9 @@ const S = StyleSheet.create({
   },
 
   // Header
-  header: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
-  companyLogo: { fontSize: 14, fontFamily: 'Helvetica-Bold', color: '#1e3a8a' },
-  tagline: { fontSize: 7.5, color: '#888', marginTop: 2 },
-  headerRight: { fontSize: 8, color: '#888', textAlign: 'right' },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  logoLeft:  { width: 120, height: 40, objectFit: 'contain' },
+  logoRight: { width: 80,  height: 40, objectFit: 'contain' },
 
   // Absenderzeile
   senderLine: {
@@ -149,11 +150,8 @@ export function InvoicePDF({ d }: { d: InvoiceData }) {
 
         {/* Header */}
         <View style={S.header}>
-          <View>
-            <Text style={S.companyLogo}>k &amp; n edv konzepte gmbh</Text>
-            <Text style={S.tagline}>Management by Ratio</Text>
-          </View>
-          <Text style={S.headerRight}>Management by Ratio</Text>
+          <Image src={`${BASE_URL}/logo-kn.png`} style={S.logoLeft} />
+          <Image src={`${BASE_URL}/Logo.png`}    style={S.logoRight} />
         </View>
 
         {/* Absenderzeile */}
