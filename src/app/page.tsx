@@ -617,20 +617,6 @@ export default function GptVaultPage() {
             </a>
           </div>
 
-          <div className={styles.supportCard}>
-            <div className={styles.supportIcon}>🖥️</div>
-            <strong>{t.support2Title}</strong>
-            <p>
-              {t.support2Desc}<br />
-              <span className={styles.supportPrice}>19,90 €</span>
-            </p>
-            <button
-              className={styles.supportLink}
-              onClick={() => openInquiry('teamviewer')}
-            >
-              {t.support2Cta}
-            </button>
-          </div>
 
           <div className={styles.supportCard}>
             <div className={styles.supportIcon}>✉️</div>
