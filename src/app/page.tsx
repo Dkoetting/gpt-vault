@@ -333,7 +333,7 @@ export default function GptVaultPage() {
       {/* ── Seiten-Wasserzeichen ─────────────────────────────────────── */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src="/logo.svg"
+        src="/logo-right.jpg"
         alt=""
         aria-hidden="true"
         className={styles.pageBgLogo}
