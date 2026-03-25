@@ -2,7 +2,7 @@ import styles from './page.module.css'
 import { getGptVaultDownloadUrl } from '@/lib/gpt-vault-download'
 
 const TEAMVIEWER_LINK  = process.env.TEAMVIEWER_LINK   ?? 'https://get.teamviewer.com/dirkkötting'
-const BOOKING_URL      = 'https://terminbuchung-ten.vercel.app/'
+const BOOKING_URL      = 'https://terminbuchung-ten.vercel.app/?type=session&topic=GPT+Vault+Session'
 const PHONE_NUMBER     = process.env.CONTACT_PHONE    ?? '+49 173 37 48 296'
 const CONTACT_EMAIL    = 'dkoetting@edvkonzepte.de'
 

@@ -208,7 +208,7 @@ export async function POST(request: Request) {
   const fromEmail   = process.env.RESEND_FROM_EMAIL ?? 'onboarding@resend.dev'
   const baseUrl     = process.env.NEXT_PUBLIC_HUB_BASE_URL ?? 'https://gpt-vault-theta.vercel.app'
   const downloadUrl = getGptVaultDownloadUrl()
-  const bookingUrl  = 'https://terminbuchung-ten.vercel.app/'
+  const bookingUrl  = 'https://terminbuchung-ten.vercel.app/?type=session&topic=GPT+Vault+Session'
   const phone       = '+49 173 37 48 296'
   const name        = fullName ? ` ${fullName}` : ''
 
