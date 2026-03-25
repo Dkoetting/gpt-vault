@@ -1,6 +1,8 @@
 import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer'
 
-const BASE_URL = process.env.NEXT_PUBLIC_HUB_BASE_URL ?? 'https://gpt-vault-theta.vercel.app'
+const BASE_URL   = process.env.NEXT_PUBLIC_HUB_BASE_URL ?? 'https://gpt-vault-theta.vercel.app'
+const LOGO_KN    = process.env.INVOICE_PDF_LOGO_KN    ?? `${BASE_URL}/logo-kn.png`
+const LOGO_RIGHT = process.env.INVOICE_PDF_LOGO_RIGHT ?? `${BASE_URL}/logo-right.jpg`
 
 // ── Styles ─────────────────────────────────────────────────────────────────────
 
@@ -150,8 +152,8 @@ export function InvoicePDF({ d }: { d: InvoiceData }) {
 
         {/* Header */}
         <View style={S.header}>
-          <Image src={`${BASE_URL}/logo-kn.png`} style={S.logoLeft} />
-          <Image src={`${BASE_URL}/Logo.png`}    style={S.logoRight} />
+          <Image src={LOGO_KN}    style={S.logoLeft} />
+          <Image src={LOGO_RIGHT} style={S.logoRight} />
         </View>
 
         {/* Absenderzeile */}
