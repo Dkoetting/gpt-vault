@@ -257,10 +257,6 @@ const workflowSteps = [
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function GptVaultPage() {
-  const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [email, setEmail]           = useState('')
-  const [loading, setLoading]       = useState(false)
-  const [error, setError]           = useState('')
   const [openFaq,      setOpenFaq]      = useState<number | null>(null)
   const [lightboxSrc,  setLightboxSrc]  = useState<string | null>(null)
 
@@ -273,11 +269,7 @@ export default function GptVaultPage() {
   const [inquiryLoading, setInquiryLoading] = useState(false)
 
   // Projects
-  const [projectCount,    setProjectCount]    = useState(1)
-  const [projectEmail,    setProjectEmail]    = useState('')
-  const [projectLoading,  setProjectLoading]  = useState(false)
-  const [projectError,    setProjectError]    = useState('')
-  const [projectSelected, setProjectSelected] = useState(false)
+  const [projectCount, setProjectCount] = useState(1)
 
   const [lang, setLang] = useState<Lang>(() => {
     if (typeof window === 'undefined') return 'de'
@@ -289,8 +281,6 @@ export default function GptVaultPage() {
     setLang(l)
     localStorage.setItem('gpt-vault-lang', l)
   }
-
-  const selectedPkg = packages.find((p) => p.id === selectedId)
 
   async function handleInquiry() {
     if (!inquiryEmail.trim() || !inquiryType) return
@@ -311,58 +301,6 @@ export default function GptVaultPage() {
     setInquiryName('')
     setInquiryEmail('')
     setInquiryMessage('')
-  }
-
-  async function handleBuy() {
-    if (!selectedPkg || !email.trim()) return
-    setLoading(true)
-    setError('')
-
-    await trackInquiry('checkout_start', { email, packageId: selectedPkg.id })
-
-    try {
-      const res = await fetch('/api/checkout', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ packageId: selectedPkg.id, email: email.trim() }),
-      })
-      const data = await res.json()
-
-      if (!res.ok || !data.url) {
-        setError(data.error ?? t.checkoutError)
-        setLoading(false)
-        return
-      }
-
-      window.location.href = data.url
-    } catch {
-      setError(t.checkoutNoConn)
-      setLoading(false)
-    }
-  }
-
-  async function handleBuyProjects() {
-    if (!projectEmail.trim() || projectCount < 1) return
-    setProjectLoading(true)
-    setProjectError('')
-    await trackInquiry('checkout_start', { email: projectEmail, packageId: 'projects', projectCount: String(projectCount) })
-    try {
-      const res = await fetch('/api/checkout', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ packageId: 'projects', projectCount, email: projectEmail.trim() }),
-      })
-      const data = await res.json()
-      if (!res.ok || !data.url) {
-        setProjectError(data.error ?? t.projError)
-        setProjectLoading(false)
-        return
-      }
-      window.location.href = data.url
-    } catch {
-      setProjectError(t.projNoConn)
-      setProjectLoading(false)
-    }
   }
 
   const mainPackages      = packages.filter((p) => !p.contactOnly)
@@ -548,17 +486,15 @@ export default function GptVaultPage() {
               className={[
                 styles.card,
                 pkg.highlight         ? styles.cardHighlight : '',
-                selectedId === pkg.id ? styles.cardSelected  : '',
+                '',
               ].join(' ')}
-              onClick={() => setSelectedId(pkg.id)}
+              onClick={() => { window.location.href = `/checkout?package=${pkg.id}` }}
             >
               {pkg.highlight && <div className={styles.badge}>{t.packagesBadge}</div>}
               <div className={styles.cardName}>{pkg.name}</div>
               <div className={styles.cardGpts}>{t.packagesUpTo} {pkg.gpts} {t.packagesGpts}</div>
               <div className={styles.cardPrice}>{formatPrice(pkg.priceCents!)}</div>
-              <div className={styles.cardSelect}>
-                {selectedId === pkg.id ? t.packagesSelected : t.packagesSelect}
-              </div>
+              <div className={styles.cardSelect}>{t.packagesSelect}</div>
             </div>
           ))}
         </div>
@@ -585,7 +521,7 @@ export default function GptVaultPage() {
         <p className={styles.sectionSub}>{t.projSub}</p>
 
         <div className={styles.projectCardWrap}>
-          <div className={[styles.projectBox, projectSelected ? styles.projectBoxSelected : ''].join(' ')}>
+          <div className={styles.projectBox}>
             <div className={styles.cardName}>{t.projLabel}</div>
             <div className={styles.projectPer}>{t.projPer}</div>
             <div className={styles.projectRow}>
@@ -601,63 +537,13 @@ export default function GptVaultPage() {
               <strong>{((projectCount * 120) / 100).toFixed(2).replace('.', ',')} €</strong>
             </div>
             <button
-              className={[styles.projectSelectBtn, projectSelected ? styles.projectSelectBtnActive : ''].join(' ')}
-              onClick={() => setProjectSelected((v) => !v)}>
-              {projectSelected ? t.packagesSelected : t.packagesSelect}
+              className={styles.projectSelectBtn}
+              onClick={() => { window.location.href = `/checkout?package=projects&count=${projectCount}` }}>
+              {t.packagesSelect}
             </button>
           </div>
         </div>
-
-        {projectError && <p className={styles.error} style={{textAlign:'center',marginTop:'8px'}}>{projectError}</p>}
-
-        {/* Checkout für Projekte */}
-        {projectSelected && (
-          <div className={styles.checkout} style={{marginTop:'16px'}}>
-            <h2 className={styles.checkoutTitle}>
-              {t.projTitle} ({projectCount}×) – {((projectCount * 120) / 100).toFixed(2).replace('.', ',')} €
-            </h2>
-            <p className={styles.checkoutSub}>{t.checkoutSub}</p>
-            <input
-              type="email" placeholder={t.projEmail} value={projectEmail}
-              onChange={(e) => setProjectEmail(e.target.value)}
-              className={styles.emailInput}
-              onKeyDown={(e) => e.key === 'Enter' && handleBuyProjects()}
-            />
-            <button className={styles.buyButton} onClick={handleBuyProjects}
-              disabled={projectLoading || !projectEmail.trim()}>
-              {projectLoading ? t.projLoading : t.projCta}
-            </button>
-            <p className={styles.checkoutHint}>{t.projHint}</p>
-          </div>
-        )}
       </section>
-
-      {/* ── Checkout ────────────────────────────────────────────────── */}
-      {selectedPkg && (
-        <section className={styles.checkout}>
-          <h2 className={styles.checkoutTitle}>
-            {selectedPkg.name} – {formatPrice(selectedPkg.priceCents!)}
-          </h2>
-          <p className={styles.checkoutSub}>{t.checkoutSub}</p>
-          <input
-            type="email"
-            placeholder={t.checkoutEmail}
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className={styles.emailInput}
-            onKeyDown={(e) => e.key === 'Enter' && handleBuy()}
-          />
-          {error && <p className={styles.error}>{error}</p>}
-          <button
-            className={styles.buyButton}
-            onClick={handleBuy}
-            disabled={loading || !email.trim()}
-          >
-            {loading ? t.checkoutLoading : t.checkoutCta}
-          </button>
-          <p className={styles.checkoutHint}>{t.checkoutHint}</p>
-        </section>
-      )}
 
       {/* ── FAQ ─────────────────────────────────────────────────────── */}
       <section className={styles.faq}>

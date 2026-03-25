@@ -1,0 +1,222 @@
+/* ── Page ─────────────────────────────────────────────────────────────────── */
+
+.page {
+  min-height: 100vh;
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 36px 24px 64px;
+}
+
+.back {
+  display: inline-block;
+  color: #2563eb;
+  font-size: 0.9rem;
+  margin-bottom: 28px;
+  text-decoration: none;
+  font-weight: 500;
+}
+.back:hover { text-decoration: underline; }
+
+/* ── Two-column layout ────────────────────────────────────────────────────── */
+
+.layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 28px;
+  align-items: start;
+}
+
+@media (max-width: 640px) {
+  .layout { grid-template-columns: 1fr; }
+}
+
+/* ── Order summary ────────────────────────────────────────────────────────── */
+
+.summary {
+  background: #f0f6ff;
+  border: 2px solid #bfdbfe;
+  border-radius: 16px;
+  padding: 22px 20px;
+  position: sticky;
+  top: 24px;
+}
+
+.summaryTitle {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1e3a8a;
+  margin: 0 0 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.summaryLine {
+  font-size: 0.95rem;
+  color: #1e293b;
+  font-weight: 600;
+  margin: 0 0 14px;
+  line-height: 1.4;
+}
+
+.summaryDivider {
+  border: none;
+  border-top: 1px solid #bfdbfe;
+  margin-bottom: 12px;
+}
+
+.summaryRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.88rem;
+  color: #4b5563;
+  margin-bottom: 6px;
+}
+
+.summaryTotal {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.95rem;
+  color: #1e3a8a;
+  border-top: 2px solid #93c5fd;
+  margin-top: 10px;
+  padding-top: 10px;
+}
+
+.summaryTotal strong {
+  font-size: 1.25rem;
+  font-weight: 900;
+}
+
+.summaryNote {
+  font-size: 0.78rem;
+  color: #6b7280;
+  margin: 14px 0 0;
+  line-height: 1.55;
+}
+
+/* ── Form ─────────────────────────────────────────────────────────────────── */
+
+.form {
+  background: #fff;
+  border: 2px solid #e5e9f2;
+  border-radius: 16px;
+  padding: 28px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.formTitle {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #1e3a8a;
+  margin: 0 0 2px;
+}
+
+/* ── Toggle ───────────────────────────────────────────────────────────────── */
+
+.toggle {
+  display: flex;
+  background: #f1f5f9;
+  border-radius: 10px;
+  padding: 4px;
+  gap: 4px;
+}
+
+.toggleBtn {
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 7px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #6b7280;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+}
+
+.toggleActive {
+  background: #2563eb;
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
+}
+
+/* ── Fields ───────────────────────────────────────────────────────────────── */
+
+.label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.optional {
+  font-weight: 400;
+  color: #9ca3af;
+  font-size: 0.8rem;
+}
+
+.input {
+  padding: 10px 12px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  color: #1e293b;
+  background: #fafafa;
+  outline: none;
+  transition: border-color 0.15s, background 0.15s;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.input:focus {
+  border-color: #2563eb;
+  background: #fff;
+}
+
+.row {
+  display: flex;
+  gap: 12px;
+}
+
+.row .label { flex: 1; }
+
+/* ── Submit ───────────────────────────────────────────────────────────────── */
+
+.submit {
+  margin-top: 4px;
+  padding: 14px;
+  background: linear-gradient(135deg, #1e3a8a, #2563eb);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  letter-spacing: 0.01em;
+}
+
+.submit:hover:not(:disabled) { opacity: 0.9; }
+.submit:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.error {
+  color: #dc2626;
+  font-size: 0.85rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin: 0;
+}
+
+.secure {
+  font-size: 0.78rem;
+  color: #9ca3af;
+  text-align: center;
+  margin: 0;
+}
