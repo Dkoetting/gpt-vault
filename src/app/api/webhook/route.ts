@@ -161,47 +161,56 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'db_error' }, { status: 500 })
   }
 
-  // 7. Lizenz anlegen
-  const licenseKey = generateLicenseKey()
-  await supabase.from('hub_licenses').insert({
-    registration_id: registration.id,
-    license_key:     licenseKey,
-    max_gpts:        maxGpts,
-    status:          'active',
-  })
+  const isSession = packageId === 'session'
 
-  // 8. Aktivierungs-Token
-  const plainToken = generatePlainToken()
-  const tokenHash  = hashToken(plainToken)
-  const expiresAt  = new Date(Date.now() + TTL_HOURS * 60 * 60 * 1000)
+  // 7. Lizenz + Token nur für Software-Pakete (nicht für Session)
+  let plainToken = ''
+  if (!isSession) {
+    const licenseKey = generateLicenseKey()
+    await supabase.from('hub_licenses').insert({
+      registration_id: registration.id,
+      license_key:     licenseKey,
+      max_gpts:        maxGpts,
+      status:          'active',
+    })
 
-  await supabase.from('hub_access_links').insert({
-    registration_id: registration.id,
-    token_hash:      tokenHash,
-    expires_at:      expiresAt.toISOString(),
-  })
+    const tokenHash = hashToken(generatePlainToken())
+    plainToken      = generatePlainToken()
+    const expiresAt = new Date(Date.now() + TTL_HOURS * 60 * 60 * 1000)
+    await supabase.from('hub_access_links').insert({
+      registration_id: registration.id,
+      token_hash:      hashToken(plainToken),
+      expires_at:      expiresAt.toISOString(),
+    })
 
-  // 9. Events loggen
-  void supabase.from('hub_access_events').insert([
-    {
+    void supabase.from('hub_access_events').insert([
+      {
+        registration_id: registration.id,
+        event_type:      'stripe_payment_completed',
+        metadata: { stripe_session_id: session.id, package_id: packageId, amount_total: session.amount_total },
+      },
+      {
+        registration_id: registration.id,
+        event_type:      'license_created',
+        metadata: { license_key: licenseKey, max_gpts: maxGpts },
+      },
+    ])
+  } else {
+    void supabase.from('hub_access_events').insert({
       registration_id: registration.id,
       event_type:      'stripe_payment_completed',
       metadata: { stripe_session_id: session.id, package_id: packageId, amount_total: session.amount_total },
-    },
-    {
-      registration_id: registration.id,
-      event_type:      'license_created',
-      metadata: { license_key: licenseKey, max_gpts: maxGpts },
-    },
-  ])
+    })
+  }
 
-  // 10. E-Mail senden (mit PDF-Anhang)
-  const resendKey     = process.env.RESEND_API_KEY
-  const fromEmail     = process.env.RESEND_FROM_EMAIL ?? 'onboarding@resend.dev'
-  const baseUrl       = process.env.NEXT_PUBLIC_HUB_BASE_URL ?? 'https://gpt-vault-theta.vercel.app'
-  const downloadUrl   = getGptVaultDownloadUrl()
-  const activationUrl = `${baseUrl}/access?token=${encodeURIComponent(plainToken)}`
-  const name          = fullName ? ` ${fullName}` : ''
+  // 8. E-Mail senden (mit PDF-Anhang)
+  const resendKey   = process.env.RESEND_API_KEY
+  const fromEmail   = process.env.RESEND_FROM_EMAIL ?? 'onboarding@resend.dev'
+  const baseUrl     = process.env.NEXT_PUBLIC_HUB_BASE_URL ?? 'https://gpt-vault-theta.vercel.app'
+  const downloadUrl = getGptVaultDownloadUrl()
+  const bookingUrl  = 'https://terminbuchung-ten.vercel.app/'
+  const phone       = '+49 173 37 48 296'
+  const name        = fullName ? ` ${fullName}` : ''
 
   if (resendKey) {
     const resend = new Resend(resendKey)
@@ -211,38 +220,63 @@ export async function POST(request: Request) {
       content:  pdfBuffer,
     }] : []
 
-    await resend.emails.send({
-      from:    fromEmail,
-      to:      email,
-      subject: `GPT Vault – Aktivierungscode & Rechnung / Activation code & Invoice`,
-      attachments,
-      html: `
-        <div style="font-family:sans-serif;max-width:600px;margin:0 auto;color:#222;">
-          <div style="background:linear-gradient(135deg,#1e3a8a,#2563eb);padding:24px 32px;border-radius:12px 12px 0 0;">
-            <h1 style="color:#fff;margin:0;font-size:22px;">🗄️ GPT Vault</h1>
-            <p style="color:#bfdbfe;margin:6px 0 0;font-size:14px;">Vielen Dank für deinen Kauf! / Thank you for your purchase!</p>
-          </div>
-          <div style="background:#fff;padding:32px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px;">
-
-            <p>Hallo${name} / Hello${name},</p>
-
-            <p><strong>Schritt 1 / Step 1 – Download GPT Vault:</strong></p>
-            <p><a href="${downloadUrl}" style="background:#2563eb;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;display:inline-block;">→ GPT Vault herunterladen / Download</a></p>
-
-            <p style="margin-top:24px;"><strong>Schritt 2 / Step 2 – Aktivierungscode / Activation code:</strong></p>
-            <p style="font-family:monospace;font-size:18px;background:#f3f4f6;padding:14px 18px;border-radius:8px;letter-spacing:0.05em;">${plainToken}</p>
-            <p><a href="${activationUrl}" style="color:#2563eb;">→ Direkt aktivieren / Activate directly</a></p>
-
-            <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;" />
-            <p style="color:#6b7280;font-size:12px;">
-              Paket / Package: GPT Vault – ${packageId}<br/>
-              Rechnung / Invoice: ${invoiceNr || '–'}<br/>
-              ${pdfBuffer ? 'Rechnung als PDF im Anhang / Invoice PDF attached.<br/>' : ''}
-              Fragen? / Questions? dkoetting@edvkonzepte.de
-            </p>
-          </div>
+    const htmlBody = isSession ? `
+      <div style="font-family:sans-serif;max-width:600px;margin:0 auto;color:#222;">
+        <div style="background:linear-gradient(135deg,#1e3a8a,#2563eb);padding:24px 32px;border-radius:12px 12px 0 0;">
+          <h1 style="color:#fff;margin:0;font-size:22px;">🖥️ GPT Vault – Geführte Session</h1>
+          <p style="color:#bfdbfe;margin:6px 0 0;font-size:14px;">Vielen Dank für deine Buchung! / Thank you for your booking!</p>
         </div>
-      `,
+        <div style="background:#fff;padding:32px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px;">
+          <p>Hallo${name} / Hello${name},</p>
+          <p>ich freue mich auf unsere gemeinsame Session! Ich werde mich in Kürze bei dir melden.<br/>
+          <em>I'm looking forward to our session! I'll be in touch shortly.</em></p>
+
+          <p style="margin-top:24px;"><strong>Termin buchen / Book appointment:</strong></p>
+          <p><a href="${bookingUrl}" style="background:#2563eb;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;display:inline-block;">→ Termin für TeamViewer-Session buchen</a></p>
+
+          <p style="margin-top:24px;"><strong>Oder direkt kontaktieren / Or contact directly:</strong></p>
+          <p>📞 ${phone}<br/>✉️ dkoetting@edvkonzepte.de</p>
+
+          <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;" />
+          <p style="color:#6b7280;font-size:12px;">
+            Rechnung / Invoice: ${invoiceNr || '–'}<br/>
+            ${pdfBuffer ? 'Rechnung als PDF im Anhang / Invoice PDF attached.<br/>' : ''}
+          </p>
+        </div>
+      </div>
+    ` : `
+      <div style="font-family:sans-serif;max-width:600px;margin:0 auto;color:#222;">
+        <div style="background:linear-gradient(135deg,#1e3a8a,#2563eb);padding:24px 32px;border-radius:12px 12px 0 0;">
+          <h1 style="color:#fff;margin:0;font-size:22px;">🗄️ GPT Vault</h1>
+          <p style="color:#bfdbfe;margin:6px 0 0;font-size:14px;">Vielen Dank für deinen Kauf! / Thank you for your purchase!</p>
+        </div>
+        <div style="background:#fff;padding:32px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px;">
+          <p>Hallo${name} / Hello${name},</p>
+
+          <p><strong>Schritt 1 / Step 1 – Download GPT Vault:</strong></p>
+          <p><a href="${downloadUrl}" style="background:#2563eb;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;display:inline-block;">→ GPT Vault herunterladen / Download</a></p>
+
+          <p style="margin-top:24px;"><strong>Schritt 2 / Step 2 – Aktivierungscode / Activation code:</strong></p>
+          <p style="font-family:monospace;font-size:18px;background:#f3f4f6;padding:14px 18px;border-radius:8px;letter-spacing:0.05em;">${plainToken}</p>
+          <p><a href="${baseUrl}/access?token=${encodeURIComponent(plainToken)}" style="color:#2563eb;">→ Direkt aktivieren / Activate directly</a></p>
+
+          <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;" />
+          <p style="color:#6b7280;font-size:12px;">
+            Paket / Package: GPT Vault – ${packageId}<br/>
+            Rechnung / Invoice: ${invoiceNr || '–'}<br/>
+            ${pdfBuffer ? 'Rechnung als PDF im Anhang / Invoice PDF attached.<br/>' : ''}
+            Fragen? / Questions? dkoetting@edvkonzepte.de
+          </p>
+        </div>
+      </div>
+    `
+
+    const subject = isSession
+      ? `GPT Vault – Geführte Session bestätigt / Session confirmed`
+      : `GPT Vault – Aktivierungscode & Rechnung / Activation code & Invoice`
+
+    await resend.emails.send({
+      from: fromEmail, to: email, subject, attachments, html: htmlBody,
     }).catch((err) => console.error('[webhook] E-Mail fehlgeschlagen', err))
   }
 
