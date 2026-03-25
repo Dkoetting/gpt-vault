@@ -2,10 +2,15 @@ import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { Resend } from 'resend'
 import { randomUUID } from 'crypto'
+import { renderToBuffer } from '@react-pdf/renderer'
+import React from 'react'
 
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { getGptVaultDownloadUrl } from '@/lib/gpt-vault-download'
 import { generatePlainToken, hashToken } from '@/lib/tokens'
+import { InvoicePDF, type InvoiceData } from '@/lib/invoice-pdf'
+
+export const runtime = 'nodejs'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -14,16 +19,20 @@ function generateLicenseKey(): string {
   return `GV-${hex.slice(0, 6)}-${hex.slice(6, 12)}-${hex.slice(12, 18)}`
 }
 
+function formatDate(d: Date): string {
+  return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
+
 const TTL_HOURS = Number(process.env.ACCESS_LINK_TTL_HOURS ?? 72)
 
-// ── POST /api/gpt-vault/webhook ───────────────────────────────────────────────
+// ── POST /api/webhook ─────────────────────────────────────────────────────────
 
 export async function POST(request: Request) {
   const stripeKey     = process.env.STRIPE_SECRET_KEY
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET_GPT_VAULT
 
   if (!stripeKey || !webhookSecret) {
-    console.error('[gpt-vault/webhook] Stripe-Konfiguration fehlt')
+    console.error('[webhook] Stripe-Konfiguration fehlt')
     return NextResponse.json({ error: 'server_config' }, { status: 500 })
   }
 
@@ -36,32 +45,86 @@ export async function POST(request: Request) {
   try {
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
   } catch (err) {
-    console.error('[gpt-vault/webhook] Signaturprüfung fehlgeschlagen', err)
+    console.error('[webhook] Signaturprüfung fehlgeschlagen', err)
     return NextResponse.json({ error: 'invalid_signature' }, { status: 400 })
   }
 
-  // 2. Nur checkout.session.completed verarbeiten
   if (event.type !== 'checkout.session.completed') {
     return NextResponse.json({ received: true })
   }
 
   const session = event.data.object as Stripe.Checkout.Session
 
-  // 3. Metadaten lesen
+  // 2. Metadaten lesen
   const packageId = session.metadata?.package_id ?? ''
+  const invoiceId = session.metadata?.invoice_id ?? ''
+  const invoiceNr = session.metadata?.invoice_nr ?? ''
   const maxGpts   = parseInt(session.metadata?.max_gpts ?? '0', 10)
   const email     = (session.customer_details?.email ?? session.customer_email ?? '').toLowerCase().trim()
   const fullName  = session.customer_details?.name ?? ''
 
   if (!email || !packageId) {
-    console.error('[gpt-vault/webhook] Fehlende Metadaten', { email, packageId })
+    console.error('[webhook] Fehlende Metadaten', { email, packageId })
     return NextResponse.json({ error: 'missing_metadata' }, { status: 400 })
   }
 
   const supabase = getSupabaseAdmin()
   const nowIso   = new Date().toISOString()
+  const today    = formatDate(new Date())
 
-  // 4. Registrierung anlegen (oder bestehende verwenden bei Duplicate)
+  // 3. hub_invoices: status → paid
+  if (invoiceId) {
+    await supabase
+      .from('hub_invoices')
+      .update({ status: 'paid', stripe_session_id: session.id })
+      .eq('id', invoiceId)
+  }
+
+  // 4. Rechnung aus DB laden (für PDF)
+  let invoiceData: InvoiceData | null = null
+  if (invoiceId) {
+    const { data: inv } = await supabase
+      .from('hub_invoices')
+      .select('*')
+      .eq('id', invoiceId)
+      .single()
+
+    if (inv) {
+      invoiceData = {
+        invoiceNr:         inv.invoice_nr,
+        invoiceDate:       today,
+        packageName:       `GPT Vault – ${inv.package_id}`,
+        packageDesc:       `Digitale Lizenz · Digital license`,
+        amountNetCents:    inv.amount_net_cents,
+        amountVatCents:    inv.amount_vat_cents,
+        amountGrossCents:  inv.amount_gross_cents,
+        billingType:       inv.billing_type,
+        company:           inv.company ?? undefined,
+        vatId:             inv.vat_id ?? undefined,
+        firstName:         inv.first_name ?? undefined,
+        lastName:          inv.last_name ?? undefined,
+        street:            inv.street,
+        zip:               inv.zip,
+        city:              inv.city,
+        country:           inv.country,
+        email:             inv.email,
+      }
+    }
+  }
+
+  // 5. PDF generieren
+  let pdfBuffer: Buffer | null = null
+  if (invoiceData) {
+    try {
+      const elem = React.createElement(InvoicePDF, { d: invoiceData })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      pdfBuffer = Buffer.from(await renderToBuffer(elem as any))
+    } catch (err) {
+      console.error('[webhook] PDF-Generierung fehlgeschlagen', err)
+    }
+  }
+
+  // 6. Registrierung anlegen
   let registration: { id: string } | null = null
 
   const { data: newReg, error: regError } = await supabase
@@ -80,7 +143,6 @@ export async function POST(request: Request) {
     .single()
 
   if (regError?.code === '23505') {
-    // Duplicate → bestehende Registration laden
     const { data: existing } = await supabase
       .from('hub_registrations')
       .select('id')
@@ -89,64 +151,42 @@ export async function POST(request: Request) {
       .single()
     registration = existing
   } else if (regError || !newReg) {
-    console.error('[gpt-vault/webhook] Registrierung fehlgeschlagen', regError)
+    console.error('[webhook] Registrierung fehlgeschlagen', regError)
     return NextResponse.json({ error: 'db_error' }, { status: 500 })
   } else {
     registration = newReg
   }
 
   if (!registration) {
-    console.error('[gpt-vault/webhook] Keine Registration gefunden')
     return NextResponse.json({ error: 'db_error' }, { status: 500 })
   }
 
-  // 5. Lizenz anlegen (mit max_gpts aus dem Paket)
+  // 7. Lizenz anlegen
   const licenseKey = generateLicenseKey()
+  await supabase.from('hub_licenses').insert({
+    registration_id: registration.id,
+    license_key:     licenseKey,
+    max_gpts:        maxGpts,
+    status:          'active',
+  })
 
-  const { error: licenseError } = await supabase
-    .from('hub_licenses')
-    .insert({
-      registration_id: registration.id,
-      license_key:     licenseKey,
-      max_gpts:        maxGpts,
-      status:          'active',
-    })
-
-  if (licenseError) {
-    console.error('[gpt-vault/webhook] Lizenz-Anlage fehlgeschlagen', licenseError)
-    return NextResponse.json({ error: 'db_error' }, { status: 500 })
-  }
-
-  // 6. Aktivierungs-Token für main.py erstellen
+  // 8. Aktivierungs-Token
   const plainToken = generatePlainToken()
   const tokenHash  = hashToken(plainToken)
   const expiresAt  = new Date(Date.now() + TTL_HOURS * 60 * 60 * 1000)
 
-  const { error: linkError } = await supabase
-    .from('hub_access_links')
-    .insert({
-      registration_id: registration.id,
-      token_hash:      tokenHash,
-      expires_at:      expiresAt.toISOString(),
-    })
+  await supabase.from('hub_access_links').insert({
+    registration_id: registration.id,
+    token_hash:      tokenHash,
+    expires_at:      expiresAt.toISOString(),
+  })
 
-  if (linkError) {
-    console.error('[gpt-vault/webhook] Access-Link fehlgeschlagen', linkError)
-    return NextResponse.json({ error: 'db_error' }, { status: 500 })
-  }
-
-  // 7. Events loggen
+  // 9. Events loggen
   void supabase.from('hub_access_events').insert([
     {
       registration_id: registration.id,
       event_type:      'stripe_payment_completed',
-      metadata: {
-        stripe_session_id: session.id,
-        package_id:        packageId,
-        max_gpts:          maxGpts,
-        amount_total:      session.amount_total,
-        created_at:        nowIso,
-      },
+      metadata: { stripe_session_id: session.id, package_id: packageId, amount_total: session.amount_total },
     },
     {
       registration_id: registration.id,
@@ -155,46 +195,55 @@ export async function POST(request: Request) {
     },
   ])
 
-  // 8. Aktivierungs-Mail senden
-  const resendKey   = process.env.RESEND_API_KEY
-  const fromEmail   = process.env.RESEND_FROM_EMAIL ?? 'onboarding@resend.dev'
-  const baseUrl     = process.env.NEXT_PUBLIC_HUB_BASE_URL ?? 'https://access-hub-tan.vercel.app'
-  const downloadUrl = getGptVaultDownloadUrl()
+  // 10. E-Mail senden (mit PDF-Anhang)
+  const resendKey     = process.env.RESEND_API_KEY
+  const fromEmail     = process.env.RESEND_FROM_EMAIL ?? 'onboarding@resend.dev'
+  const baseUrl       = process.env.NEXT_PUBLIC_HUB_BASE_URL ?? 'https://gpt-vault-theta.vercel.app'
+  const downloadUrl   = getGptVaultDownloadUrl()
   const activationUrl = `${baseUrl}/access?token=${encodeURIComponent(plainToken)}`
+  const name          = fullName ? ` ${fullName}` : ''
 
   if (resendKey) {
     const resend = new Resend(resendKey)
-    const name   = fullName ? ` ${fullName}` : ''
+
+    const attachments = pdfBuffer ? [{
+      filename: `Rechnung_${invoiceNr || invoiceId}_GPT-Vault.pdf`,
+      content:  pdfBuffer,
+    }] : []
 
     await resend.emails.send({
       from:    fromEmail,
       to:      email,
-      subject: 'GPT Vault – your download & activation token',
+      subject: `GPT Vault – Aktivierungscode & Rechnung / Activation code & Invoice`,
+      attachments,
       html: `
-        <p>Hello${name},</p>
-        <p>thank you for purchasing <strong>GPT Vault</strong>!</p>
-        <p><strong>Step 1 – Download GPT Vault:</strong></p>
-        <p>
-          <a href="${downloadUrl}" style="font-weight:bold;">→ Download GPT Vault (ZIP)</a>
-        </p>
-        <p><strong>Step 2 – Activate:</strong></p>
-        <p>Start GPT Vault and enter the following token when prompted,<br/>
-        or click the activation link:</p>
-        <p style="font-family:monospace;font-size:16px;background:#f3f4f6;padding:12px;border-radius:6px;">
-          ${plainToken}
-        </p>
-        <p>
-          <a href="${activationUrl}" style="font-weight:bold;">→ Activate directly</a>
-        </p>
-        <p style="color:#6b7280;font-size:12px;">
-          Your package: GPT Vault – ${packageId} (max. ${maxGpts} GPTs)<br/>
-          Token valid for ${TTL_HOURS} hours.<br/>
-          Questions? dr-dirk@dr-dirkinstitute.org
-        </p>
+        <div style="font-family:sans-serif;max-width:600px;margin:0 auto;color:#222;">
+          <div style="background:linear-gradient(135deg,#1e3a8a,#2563eb);padding:24px 32px;border-radius:12px 12px 0 0;">
+            <h1 style="color:#fff;margin:0;font-size:22px;">🗄️ GPT Vault</h1>
+            <p style="color:#bfdbfe;margin:6px 0 0;font-size:14px;">Vielen Dank für deinen Kauf! / Thank you for your purchase!</p>
+          </div>
+          <div style="background:#fff;padding:32px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px;">
+
+            <p>Hallo${name} / Hello${name},</p>
+
+            <p><strong>Schritt 1 / Step 1 – Download GPT Vault:</strong></p>
+            <p><a href="${downloadUrl}" style="background:#2563eb;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;display:inline-block;">→ GPT Vault herunterladen / Download</a></p>
+
+            <p style="margin-top:24px;"><strong>Schritt 2 / Step 2 – Aktivierungscode / Activation code:</strong></p>
+            <p style="font-family:monospace;font-size:18px;background:#f3f4f6;padding:14px 18px;border-radius:8px;letter-spacing:0.05em;">${plainToken}</p>
+            <p><a href="${activationUrl}" style="color:#2563eb;">→ Direkt aktivieren / Activate directly</a></p>
+
+            <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;" />
+            <p style="color:#6b7280;font-size:12px;">
+              Paket / Package: GPT Vault – ${packageId}<br/>
+              Rechnung / Invoice: ${invoiceNr || '–'}<br/>
+              ${pdfBuffer ? 'Rechnung als PDF im Anhang / Invoice PDF attached.<br/>' : ''}
+              Fragen? / Questions? dkoetting@edvkonzepte.de
+            </p>
+          </div>
+        </div>
       `,
-    }).catch((err) => {
-      console.error('[gpt-vault/webhook] E-Mail fehlgeschlagen', err)
-    })
+    }).catch((err) => console.error('[webhook] E-Mail fehlgeschlagen', err))
   }
 
   return NextResponse.json({ received: true })

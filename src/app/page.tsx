@@ -239,6 +239,7 @@ type Package = {
   description: string
   highlight: boolean
   contactOnly?: boolean
+  sessionOnly?: boolean
 }
 
 const packages = packagesRaw as Package[]
