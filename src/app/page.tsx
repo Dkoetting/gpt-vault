@@ -108,6 +108,10 @@ const translations = {
     projError:    'Fehler beim Checkout – bitte erneut versuchen.',
     projNoConn:   'Keine Verbindung – bitte erneut versuchen.',
     projEmail:    'Deine E-Mail-Adresse',
+    sessionTitle: 'Geführte Session (TeamViewer)',
+    sessionDesc:  'Ich installiere und richte GPT Vault gemeinsam mit dir per TeamViewer ein – schnell, unkompliziert, persönlich.',
+    sessionPrice: '19,90 €',
+    sessionCta:   'Session anfragen →',
   },
   en: {
     heroSub:  'Back up all your Custom GPTs – as JSON & Excel,\nlocally on your PC. Buy once, use forever.',
@@ -207,6 +211,10 @@ const translations = {
     projError:    'Checkout error – please try again.',
     projNoConn:   'No connection – please try again.',
     projEmail:    'Your email address',
+    sessionTitle: 'Guided Session (TeamViewer)',
+    sessionDesc:  'I install and set up GPT Vault together with you via TeamViewer – fast, straightforward, personal.',
+    sessionPrice: '€19.90',
+    sessionCta:   'Request session →',
   },
 }
 
@@ -542,6 +550,24 @@ export default function GptVaultPage() {
               className={styles.projectSelectBtn}
               onClick={() => { window.location.href = `/checkout?package=projects&count=${projectCount}` }}>
               {t.packagesSelect}
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Geführte Session ────────────────────────────────────────── */}
+      <section className={styles.packages}>
+        <div className={styles.projectCardWrap}>
+          <div className={styles.sessionBox}>
+            <div className={styles.sessionIcon}>🖥️</div>
+            <div className={styles.sessionTitle}>{t.sessionTitle}</div>
+            <p className={styles.sessionDesc}>{t.sessionDesc}</p>
+            <div className={styles.sessionPrice}>{t.sessionPrice}</div>
+            <div className={styles.cardVat}>zzgl. 19&nbsp;% MwSt.</div>
+            <button
+              className={styles.projectSelectBtn}
+              onClick={() => openInquiry('teamviewer')}>
+              {t.sessionCta}
             </button>
           </div>
         </div>
