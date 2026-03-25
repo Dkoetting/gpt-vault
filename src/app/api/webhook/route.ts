@@ -9,6 +9,7 @@ import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { getGptVaultDownloadUrl } from '@/lib/gpt-vault-download'
 import { generatePlainToken, hashToken } from '@/lib/tokens'
 import { InvoicePDF, type InvoiceData } from '@/lib/invoice-pdf'
+import packages from '@/config/packages.json'
 
 export const runtime = 'nodejs'
 
@@ -93,8 +94,8 @@ export async function POST(request: Request) {
       invoiceData = {
         invoiceNr:         inv.invoice_nr,
         invoiceDate:       today,
-        packageName:       `GPT Vault – ${inv.package_id}`,
-        packageDesc:       `Digitale Lizenz · Digital license`,
+        packageName:       `GPT Vault – ${packages.find((p: {id:string;name:string}) => p.id === inv.package_id)?.name ?? inv.package_id}`,
+        packageDesc:       inv.package_id === 'session' ? 'Geführte Einrichtungs-Session via TeamViewer · Guided setup session via TeamViewer' : 'Digitale Lizenz · Digital license',
         amountNetCents:    inv.amount_net_cents,
         amountVatCents:    inv.amount_vat_cents,
         amountGrossCents:  inv.amount_gross_cents,
