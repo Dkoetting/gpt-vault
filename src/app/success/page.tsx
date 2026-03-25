@@ -1,9 +1,10 @@
 import styles from './page.module.css'
 import { getGptVaultDownloadUrl } from '@/lib/gpt-vault-download'
 
-const TEAMVIEWER_LINK = process.env.TEAMVIEWER_LINK ?? 'https://get.teamviewer.com/dirkkötting'
-const PHONE_NUMBER    = process.env.CONTACT_PHONE   ?? '+49 173 37 48 296'
-const CONTACT_EMAIL   = 'dkoetting@edvkonzepte.de'
+const TEAMVIEWER_LINK  = process.env.TEAMVIEWER_LINK   ?? 'https://get.teamviewer.com/dirkkötting'
+const BOOKING_URL      = 'https://terminbuchung-ten.vercel.app/'
+const PHONE_NUMBER     = process.env.CONTACT_PHONE    ?? '+49 173 37 48 296'
+const CONTACT_EMAIL    = 'dkoetting@edvkonzepte.de'
 
 interface Props {
   searchParams: Promise<{ package?: string }>
@@ -62,11 +63,18 @@ export default async function GptVaultSuccessPage({ searchParams }: Props) {
               <div className={styles.step}>
                 <span className={styles.stepNum}>3</span>
                 <div>
-                  <strong>Ich melde mich bei dir</strong>
+                  <strong>Termin buchen</strong>
                   <p>
-                    Ich rufe dich an oder schreibe dir – wir vereinbaren gemeinsam
-                    einen Termin für die Session.
+                    Buche direkt einen Termin für die geführte Session – oder ich melde mich bei dir.
                   </p>
+                  <a
+                    href={BOOKING_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={styles.downloadLink}
+                  >
+                    → Termin für TeamViewer-Session buchen
+                  </a>
                   <p className={styles.contactLine}>
                     📞 <a href={`tel:${PHONE_NUMBER.replace(/\s/g, '')}`}>{PHONE_NUMBER}</a>
                     &nbsp;&nbsp;·&nbsp;&nbsp;
