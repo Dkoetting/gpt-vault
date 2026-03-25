@@ -111,7 +111,7 @@ const translations = {
     sessionTitle: 'Geführte Session (TeamViewer)',
     sessionDesc:  'Ich installiere und richte GPT Vault gemeinsam mit dir per TeamViewer ein – schnell, unkompliziert, persönlich.',
     sessionPrice: '19,90 €',
-    sessionCta:   'Session anfragen →',
+    sessionCta:   'Session kaufen →',
   },
   en: {
     heroSub:  'Back up all your Custom GPTs – as JSON & Excel,\nlocally on your PC. Buy once, use forever.',
@@ -214,7 +214,7 @@ const translations = {
     sessionTitle: 'Guided Session (TeamViewer)',
     sessionDesc:  'I install and set up GPT Vault together with you via TeamViewer – fast, straightforward, personal.',
     sessionPrice: '€19.90',
-    sessionCta:   'Request session →',
+    sessionCta:   'Buy session →',
   },
 }
 
@@ -566,7 +566,7 @@ export default function GptVaultPage() {
             <div className={styles.cardVat}>zzgl. 19&nbsp;% MwSt.</div>
             <button
               className={styles.projectSelectBtn}
-              onClick={() => openInquiry('teamviewer')}>
+              onClick={() => { window.location.href = '/checkout?package=session' }}>
               {t.sessionCta}
             </button>
           </div>

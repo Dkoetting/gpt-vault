@@ -36,6 +36,16 @@
     "highlight": false
   },
   {
+    "id": "session",
+    "name": "Geführte Session (TeamViewer)",
+    "gpts": null,
+    "priceCents": 1990,
+    "currency": "EUR",
+    "description": "Ich installiere und richte GPT Vault gemeinsam mit dir per TeamViewer ein.",
+    "highlight": false,
+    "sessionOnly": true
+  },
+  {
     "id": "enterprise",
     "name": "Enterprise",
     "gpts": null,

@@ -14,6 +14,7 @@ type Package = {
   currency: string
   description: string
   contactOnly?: boolean
+  sessionOnly?: boolean
 }
 
 const packages = packagesRaw as Package[]
