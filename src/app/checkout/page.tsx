@@ -24,8 +24,9 @@ function CheckoutForm() {
     lineDesc = `GPT Vault – ${pkg?.name} (bis zu ${pkg?.gpts} GPTs)`
   }
 
-  const netCents = Math.round(grossCents / 1.19)
-  const vatCents = grossCents - netCents
+  const netCents   = grossCents
+  const vatCents   = Math.round(netCents * 0.19)
+  const totalCents = netCents + vatCents
   const fmt = (c: number) => (c / 100).toFixed(2).replace('.', ',') + ' €'
 
   // ── Form state ─────────────────────────────────────────────────────────────
@@ -88,7 +89,7 @@ function CheckoutForm() {
             <span>zzgl. 19 % USt.</span><span>{fmt(vatCents)}</span>
           </div>
           <div className={styles.summaryTotal}>
-            <span>Gesamtbetrag</span><strong>{fmt(grossCents)}</strong>
+            <span>Gesamtbetrag</span><strong>{fmt(totalCents)}</strong>
           </div>
           <p className={styles.summaryNote}>
             Nach der Zahlung erhältst du deinen Aktivierungscode und eine Rechnung per E-Mail.
