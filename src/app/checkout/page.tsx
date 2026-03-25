@@ -33,7 +33,7 @@ function CheckoutForm() {
   const [form, setForm] = useState({
     company: '', vatId: '',
     firstName: '', lastName: '',
-    street: '', zip: '', city: '', country: 'DE', email: '',
+    street: '', zip: '', city: '', country: 'DE', email: '', phone: '',
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -175,6 +175,12 @@ function CheckoutForm() {
             E-Mail-Adresse *
             <input required type="email" className={styles.input} value={form.email}
               onChange={(e) => set('email', e.target.value)} placeholder="max@beispiel.de" />
+          </label>
+
+          <label className={styles.label}>
+            Telefonnummer <span className={styles.optional}>(optional)</span>
+            <input type="tel" className={styles.input} value={form.phone}
+              onChange={(e) => set('phone', e.target.value)} placeholder="+49 89 123456" />
           </label>
 
           {error && <p className={styles.error}>{error}</p>}

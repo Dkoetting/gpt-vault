@@ -33,6 +33,7 @@ const billingSchema = z.object({
   city:      z.string().min(1).max(100),
   country:   z.string().length(2).default('DE'),
   email:     z.string().email().max(320),
+  phone:     z.string().max(50).optional(),
 })
 
 const requestSchema = z.object({
@@ -116,6 +117,7 @@ export async function POST(request: Request) {
       city:                billing?.city ?? '',
       country:             billing?.country ?? 'DE',
       email,
+      phone:               billing?.phone ?? null,
       package_id:          metaPackageId,
       amount_net_cents:    amountNet,
       amount_vat_cents:    amountVat,
