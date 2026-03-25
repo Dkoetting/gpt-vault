@@ -584,12 +584,10 @@ export default function GptVaultPage() {
         <h2 className={styles.sectionTitle}>{t.projTitle}</h2>
         <p className={styles.sectionSub}>{t.projSub}</p>
 
-        <div className={styles.grid}>
-          <div className={[styles.card, styles.projectBox].join(' ')}>
-            <div className={styles.projectLabel}>
-              <span>{t.projLabel}</span>
-              <span className={styles.projectPer}>{t.projPer}</span>
-            </div>
+        <div className={styles.projectCardWrap}>
+          <div className={[styles.projectBox, projectSelected ? styles.projectBoxSelected : ''].join(' ')}>
+            <div className={styles.cardName}>{t.projLabel}</div>
+            <div className={styles.projectPer}>{t.projPer}</div>
             <div className={styles.projectRow}>
               <button className={styles.projectStep} onClick={() => setProjectCount((n) => Math.max(1, n - 1))} aria-label="Weniger">−</button>
               <input
@@ -600,10 +598,11 @@ export default function GptVaultPage() {
               <button className={styles.projectStep} onClick={() => setProjectCount((n) => Math.min(500, n + 1))} aria-label="Mehr">+</button>
             </div>
             <div className={styles.projectTotal}>
-              {t.projTotal}&nbsp;<strong>{((projectCount * 120) / 100).toFixed(2).replace('.', ',')} €</strong>
+              <strong>{((projectCount * 120) / 100).toFixed(2).replace('.', ',')} €</strong>
             </div>
-            <button className={styles.cardSelect} style={projectSelected ? {background:'#1d4ed8',color:'#fff',borderColor:'#1d4ed8'} : {}}
-              onClick={() => setProjectSelected(true)}>
+            <button
+              className={[styles.projectSelectBtn, projectSelected ? styles.projectSelectBtnActive : ''].join(' ')}
+              onClick={() => setProjectSelected((v) => !v)}>
               {projectSelected ? t.packagesSelected : t.packagesSelect}
             </button>
           </div>

@@ -1018,48 +1018,60 @@
 
 /* ── ChatGPT Projekte ──────────────────────────────────────────────────────── */
 
+.projectCardWrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+
 .projectBox {
-  background: #f0f4ff;
-  border: 2px solid #2563eb;
-  border-radius: 18px;
-  padding: 32px;
-  max-width: 480px;
-  margin: 0 auto;
+  background: #fff;
+  border: 2px solid #e5e9f2;
+  border-radius: 16px;
+  padding: 20px 24px;
   display: flex;
   flex-direction: column;
   gap: 12px;
+  align-items: center;
+  text-align: center;
+  min-width: 220px;
+  max-width: 280px;
+  width: 100%;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s;
 }
 
-.projectLabel {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-weight: 600;
-  color: #1e3a8a;
-  font-size: 0.95rem;
+.projectBox:hover {
+  border-color: #93c5fd;
+  box-shadow: 0 6px 20px rgba(29, 78, 216, 0.1);
+  transform: translateY(-2px);
+}
+
+.projectBoxSelected {
+  border-color: #1d4ed8 !important;
+  background: #eff6ff;
+  box-shadow: 0 6px 24px rgba(29, 78, 216, 0.18) !important;
 }
 
 .projectPer {
-  font-weight: 400;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   color: #6b7280;
+  margin-bottom: 2px;
 }
 
 .projectRow {
   display: flex;
   align-items: center;
-  gap: 12px;
-  justify-content: center;
+  gap: 8px;
 }
 
 .projectStep {
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   border: 2px solid #2563eb;
   background: #fff;
   color: #2563eb;
-  font-size: 1.4rem;
+  font-size: 1.2rem;
   line-height: 1;
   cursor: pointer;
   font-weight: 700;
@@ -1075,31 +1087,52 @@
 }
 
 .projectInput {
-  width: 90px;
+  width: 56px;
   text-align: center;
-  font-size: 1.6rem;
+  font-size: 1.2rem;
   font-weight: 700;
   color: #1e3a8a;
   border: 2px solid #2563eb;
-  border-radius: 10px;
-  padding: 6px 8px;
+  border-radius: 8px;
+  padding: 4px 6px;
   outline: none;
   background: #fff;
+  appearance: textfield;
+  -moz-appearance: textfield;
 }
 
 .projectInput::-webkit-inner-spin-button,
 .projectInput::-webkit-outer-spin-button {
   -webkit-appearance: none;
+  margin: 0;
 }
 
 .projectTotal {
   text-align: center;
-  font-size: 1.5rem;
+  font-size: 1rem;
   color: #1e3a8a;
-  margin: 4px 0;
+  white-space: nowrap;
 }
 
 .projectTotal strong {
-  font-size: 2rem;
+  font-size: 1.35rem;
   font-weight: 900;
+}
+
+.projectSelectBtn {
+  background: none;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #1d4ed8;
+  padding: 4px 16px;
+  border: 1.5px solid #93c5fd;
+  border-radius: 20px;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.projectSelectBtnActive {
+  background: #1d4ed8;
+  color: #fff;
+  border-color: #1d4ed8;
 }
