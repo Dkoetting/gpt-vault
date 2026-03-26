@@ -59,10 +59,13 @@ create table if not exists hub_licenses (
   registration_id uuid        not null references hub_registrations(id) on delete cascade,
   license_key     text        not null unique,
   max_gpts        integer     not null default 0,
+  max_projects    integer     not null default 0,
   status          text        not null default 'active',
   created_at      timestamptz not null default now(),
   updated_at      timestamptz not null default now()
 );
+
+alter table hub_licenses add column if not exists max_projects integer not null default 0;
 
 create index if not exists hub_licenses_registration_idx
   on hub_licenses (registration_id);
