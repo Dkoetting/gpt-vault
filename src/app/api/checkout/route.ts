@@ -3,7 +3,7 @@ import Stripe from 'stripe'
 import { z } from 'zod'
 
 import packagesRaw from '@/config/packages.json'
-import { supabase } from '@/lib/supabase'
+import { getSupabase } from '@/lib/supabase'
 
 type Package = {
   id: string
@@ -40,6 +40,7 @@ const requestSchema = z.object({
 })
 
 async function nextInvoiceNr(): Promise<string> {
+  const supabase = getSupabase()
   const year = new Date().getFullYear()
   const { count } = await supabase
     .from('hub_invoices')
@@ -49,6 +50,14 @@ async function nextInvoiceNr(): Promise<string> {
 }
 
 export async function POST(request: Request) {
+  let supabase
+  try {
+    supabase = getSupabase()
+  } catch (err) {
+    console.error('[checkout] Missing Supabase configuration', err)
+    return NextResponse.json({ error: 'server_config' }, { status: 500 })
+  }
+
   let body: z.infer<typeof requestSchema>
   try {
     body = requestSchema.parse(await request.json())
